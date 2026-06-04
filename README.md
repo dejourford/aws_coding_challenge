@@ -1580,8 +1580,31 @@ pipeline {
 
 ```
 
-49. 
-      
+49. Create a Jenkins Pipeline
+  
+  1. Go to Jenkins Home Page and click 'Create a job'
+  2. Create a name for the pipeline
+  3. Select 'Pipeline' and click 'OK'
+  4. Scroll down to 'Triggers' and Select 'GitHub hook trigger for GITScm polling'
+  5. Scroll down to 'Pipeline'
+  6. Click the 'Definition' dropdown and Select 'Pipeline from SCM'
+  7. Click the 'SCM' dropdown and Select 'Git'
+  8. Enter the GitHub repository url (ex. https://github.com/github_project_name.git)
+  9. Under the 'Credentials' dropdown, Select the GitHub PAT credentials created earlier
+  10. Scroll down to 'Branches to build' and type '*/main'
+  11. Click 'Save'
+
+50. Create a GitHub Webhook in GitHub
+  1. Go to your github repository
+  2. Click 'Settings'
+  3. Select 'Webhooks' in the left sidebar under 'Code and automation'
+  4. Click 'Add webhook'
+  5. Payload URL = http://<your-ec2-public-ip>:8080/github-webhook/
+  6. Content Type = application/json
+  7. Click 'Add webhook'
+
+51. Go back to Jenkins and Click 'Build Now' to run initial build
+![Run Build](/screenshots/run_build.png)
 
 
 # Optional Extras
