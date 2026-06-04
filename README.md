@@ -1310,7 +1310,22 @@ chmod 400 1PU.pem
 
 ```
 
-31. add the .pem extension to the .gitignore file
+31. add items to the .gitignore file
+
+```
+
+node_modules
+.pem
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/*.pem
+terraform/*.tfstate
+terraform/*.tfstate.backup
+
+
+```
+
+
 ![Git Ignore File](/screenshots/git_ignore.png)
 
 
