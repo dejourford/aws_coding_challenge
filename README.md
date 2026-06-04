@@ -1796,6 +1796,18 @@ git push origin gitops
 
 ![GitOps](/screenshots/gitops.png)
 
+68. Check the 'Actions' tab in the GitHub repo to make sure the actions started automatically
+
+![Actions](/screenshots/actions.png)
+
+69. Verify a new deployment of the frontend and backend on the ECS cluster
+
+![Frontend Verification](/screenshots/fe_verify.png)
+
+70. Verify a new deployment of the frontend and backend on the ECS cluster
+
+![Backend Verification](/screenshots/be_verify.png)
+
 # Optional Extras
 The core requirement for this challenge is to get the provided application up and running for consumption over the public internet. That being said, there are some opportunities in this code challenge to demonstrate your skill sets that are above and beyond the core requirement.
 
