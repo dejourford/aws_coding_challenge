@@ -1342,8 +1342,9 @@ terraform apply
 
 33. Validate AWS resources on the AWS Console by checking ECS cluster, ALB DNS, VPC, and other related services for this project.
 
-![AWS Console](/screenshots/aws_console.png)
-
+![EC2](/screenshots/ec2.png)
+![ECS](/screenshots/ecs.png)
+![VPC](/screenshots/vpc.png)
 
 34. Push Terraform code to GitHub
 
