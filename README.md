@@ -1373,7 +1373,7 @@ git push
 
 36. Update the system
 
-``
+```
 
 sudo dnf update && sudo dnf upgrade
 
@@ -1398,6 +1398,190 @@ sudo systemctl start jenkins
 sudo systemctl enable jenkins
 
 ```
+
+38. Install Docker
+
+```
+
+sudo dnf install docker -y
+sudo systemctl start docker
+sudo systemctl enable docker
+sudo systemctl status docker
+
+```
+
+39. Add Jenkins to the Docker group so it can run Docker commands
+
+```
+
+sudo usermod -aG docker jenkins
+sudo systemctl restart jenkins
+
+```
+
+40. Verify Jenkins is running by verifying t he UI on our web browser
+
+```
+http://<Jenkins-EC2-Public-IP-Address>:8080
+
+```
+
+![Jenkins](/screenshots/jenkins.png)
+
+41. Get secret admin password to login
+
+```
+
+sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+
+```
+
+42. Click "Install suggested plugins"
+
+![Plugins](/screenshots/plugins.png)
+
+
+43. (Optional) Create an admin user so that it's not necessary to input the secret password again.
+
+![Admin](/screenshots/admin.png)
+
+44. Confirm the IP Address
+
+45. Navigate to Settings --> Manage Jenkins --> Plugins --> Available Plugins and install the following:
+  - Docker
+  - Amazon EC2
+  - Amazon Elastic Container Service (ECS) / Fargate
+
+46. Since there is no AWS CLI plugin, we will need to install AWS CLI on the jenkins container
+
+```
+
+sudo dnf install awscli -y
+aws --version
+
+```
+
+47. Navigate to Manage Jenkins --> Credentials --> System --> Global --> add credentials
+  
+  - GitHub PAT Token
+    - Select 'Username with password' and click 'Next'
+    - Username = your GitHub username.
+    - Password = your GitHub personal access token
+      - How to create a GitHub personal access token:
+        1. Click Profile icon in top right corner and click 'Settings'
+        2. Scroll down to 'Developer Settings' on the left sidebar
+        3. Click 'Personal access tokens' on the left sidebar
+        4. Select 'Tokens (classic)'
+        5. Select 'Generate new token'
+        6. Select 'Generate new token (classic)'
+        7. Name the token in the Notes Input Field
+        8. Select the 'repo' and 'admin:repo_hook' checkboxes
+        9. Click 'Generate Token'
+        10. Copy the token immediately because you will NOT see it again
+    - (Optional) Give it an ID (ex. github_pat)
+    - Click 'Create'
+
+  - AWS Credentials
+    - Select 'AWS Credentials'
+    - Click 'Next'
+    - ID = name your credentials
+    - Access ID = Access ID of your IAM User
+    - Secret Access Key = Secret Access Key of your IAM User
+      - How to retreive Access ID and Secret Access Keys:
+        1. Go to IAM --> Users
+        2. Click your user
+        3. Go to 'Security Credentials' tab
+        4. Scroll to 'Access Keys' and click 'Create access key'
+        5. Select CLI as the use case, select the confirmation checkbox and click 'Next'
+        6. Enter a description (ex. jenkins_key) and click 'Create Key'
+        7. Copy the Access Key ID and Secret Access Key because you will NOT see them again.
+    - Click 'Create'
+
+48. In your local machine, navigate to the root project directory and create a Jenkinsfile
+
+```
+
+pipeline {
+    agent any
+
+    environment {
+        // ====> Replace with your AWS region, e.g., 'us-east-1'
+        AWS_REGION = 'your-aws-region'
+
+        // ====> Replace with your own ECR repository URIs
+        FRONTEND_REPO = 'your-frontend-ecr-repo-uri'
+        BACKEND_REPO  = 'your-backend-ecr-repo-uri'
+    }
+
+    stages {
+        stage('Checkout code') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build Docker images') {
+            steps {
+                script {
+                    sh 'docker build -t frontend:latest ./frontend'
+                    sh 'docker build -t backend:latest ./backend'
+                }
+            }
+        }
+
+        stage('Authenticate to ECR') {
+            steps {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'your-aws-credentials-id']]) {
+                    script {
+                        sh '''
+                            aws --version
+                            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $FRONTEND_REPO
+                            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $BACKEND_REPO
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Tag and Push images to ECR') {
+            steps {
+                script {
+                    sh '''
+                        docker tag frontend:latest $FRONTEND_REPO:latest
+                        docker tag backend:latest $BACKEND_REPO:latest
+
+                        docker push $FRONTEND_REPO:latest
+                        docker push $BACKEND_REPO:latest
+                    '''
+                }
+            }
+        }
+
+        stage('Update ECS services') {
+            steps {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'your-aws-credentials-id']]) {
+                    script {
+                        sh '''
+                            aws ecs update-service --cluster your-ecs-cluster-name --service your-frontend-service-name --force-new-deployment --region $AWS_REGION
+                            aws ecs update-service --cluster your-ecs-cluster-name --service your-backend-service-name --force-new-deployment --region $AWS_REGION
+                        '''
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
+        }
+    }
+}
+
+```
+
+49. 
+      
 
 
 # Optional Extras
