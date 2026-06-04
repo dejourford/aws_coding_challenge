@@ -1644,6 +1644,43 @@ CORS_ORIGIN: 'http://<ALB-DNS>'
 
 ![Trigger Build](/screenshots/trigger_build.png)
 
+58. Check that the application displays the success message by inputting the ALB DNS into the browser
+
+![ALB Success](/screenshots/alb_success.png)
+
+59. Install a load test tool (e.g., siege)
+
+```
+
+sudo dnf install gcc make wget -y
+wget http://download.joedog.org/siege/siege-latest.tar.gz
+tar -xzf siege-latest.tar.gz
+cd siege-*/
+./configure
+make
+sudo make install
+
+```
+
+60. Run Load Test
+
+```
+
+siege -c 250 -t 2M https://<frontend-alb-dns>
+
+```
+
+![Load Test](/screenshots/load_test.png)
+
+61. Monitor ECS auto scaling & Document results
+
+![ECS](/screenshots/ecs_events.png)
+
+![ECS Backend](/screenshots/ecs_backend_events.png)
+
+![Results](/screenshots/results.png)
+
+
 # Optional Extras
 The core requirement for this challenge is to get the provided application up and running for consumption over the public internet. That being said, there are some opportunities in this code challenge to demonstrate your skill sets that are above and beyond the core requirement.
 
