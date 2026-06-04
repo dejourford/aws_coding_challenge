@@ -1063,6 +1063,9 @@ data "aws_ami" "amazon_linux_2023" {
 #------------------------------------------------------------------
 # Jenkins Master EC2 Instance
 #------------------------------------------------------------------
+#------------------------------------------------------------------
+# Jenkins Master EC2 Instance
+#------------------------------------------------------------------
 resource "aws_instance" "jenkins_master" {
   ami           = data.aws_ami.amazon_linux_2023.id
   instance_type = "t3.small"
@@ -1070,6 +1073,16 @@ resource "aws_instance" "jenkins_master" {
 
   vpc_security_group_ids = [aws_security_group.jenkins.id]
   subnet_id              = aws_subnet.public[0].id
+
+  user_data = <<-EOF
+    #!/bin/bash
+    dnf install wget java-21-amazon-corretto -y
+    wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
+    rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+    dnf install jenkins -y
+    systemctl enable jenkins
+    systemctl start jenkins
+  EOF
 
   root_block_device {
     volume_size = 30
@@ -1301,12 +1314,14 @@ output "ecs_task_role_arn" {
 
 ```
 
-30. Create Key Pair for EC2 Instance
+30. Create Key Pair for EC2 Instance and copy it to the .ssh directory
 
 ```
 
 aws ec2 create-key-pair --key-name 1PU --query 'KeyMaterial' --output text > 1PU.pem
 chmod 400 1PU.pem
+cp 1PU.pem ~/.ssh/
+
 
 ```
 
@@ -1353,6 +1368,37 @@ terraform apply
 git add terraform
 git commit -m "add terraform files"
 git push
+
+```
+
+35. SSH into the Master/Jenkins EC2 using the .pem key created earlier.
+![SSH](/screenshots/ssh.png)
+
+36. Update the system
+
+``
+
+sudo dnf update && sudo dnf upgrade
+
+```
+
+37. Install Jenkins
+
+```
+
+# Install wget
+sudo dnf install wget -y
+
+# Add Jenkins repo
+sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
+sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+
+# Now install Jenkins
+sudo dnf install jenkins -y
+
+# Start and enable
+sudo systemctl start jenkins
+sudo systemctl enable jenkins
 
 ```
 

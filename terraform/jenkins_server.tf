@@ -27,6 +27,16 @@ resource "aws_instance" "jenkins_master" {
   vpc_security_group_ids = [aws_security_group.jenkins.id]
   subnet_id              = aws_subnet.public[0].id
 
+  user_data = <<-EOF
+    #!/bin/bash
+    dnf install wget java-21-amazon-corretto -y
+    wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
+    rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+    dnf install jenkins -y
+    systemctl enable jenkins
+    systemctl start jenkins
+  EOF
+
   root_block_device {
     volume_size = 30
     volume_type = "gp3"
