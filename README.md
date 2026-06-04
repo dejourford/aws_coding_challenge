@@ -1680,6 +1680,121 @@ siege -c 250 -t 2M https://<frontend-alb-dns>
 
 ![Results](/screenshots/results.png)
 
+62. In the project root directory, create a gitops branch and remove the Jenkinsfile (locally)
+
+```
+
+git checkout -b gitops
+rm Jenkinsfile
+
+```
+
+63. Create directory for the GitHub Actions workflow
+
+```
+
+mkdir -p .github/workflows
+
+```
+
+64. Configure the OIDC for GitHub Actions
+  1. In AWS Console, go to IAM --> Identity providers
+  2. Click 'Add provider'
+  3. Provider Type = OpenID Connect
+  4. Provider URL = https://token.actions.githubusercontent.com
+  5. Audience = sts.amazonaws.com
+  6. Click 'Add provider'
+
+65. Create an IAM role that GitHub Actions can utilize
+  1. In AWS Console, go to IAM --> Roles --> Create Role
+  2. Trusted entity type = Web identity
+  3. Identity provider = token.actions.githubusercontent.com
+  4. Audience = sts.amazonaws.com
+  5. GitHub organization = Your Github Username
+  6. GitHub Repository = *
+  7. GitHub branch = gitops
+  8. Click 'Next'
+  9. Attach the following policies:
+    - AmazonEC2ContainerRegistryPowerUser
+    - AmazonECS_FullAccess
+  10. Click 'Next'
+  11. Name the role
+  12. Click 'Create role'
+
+66. In the .github/workflows directory create a deploy.yml file
+
+```
+
+name: Deploy to ECS
+
+on:
+  push:
+    branches:
+      - gitops
+
+env:
+  AWS_REGION: <region-your-project is located>
+  ECR_FRONTEND: <your-account-id>.dkr.ecr.<region>.amazonaws.com/<your-frontend-repo>
+  ECR_BACKEND: <your-account-id>.dkr.ecr.<region>.amazonaws.com/<your-backend-repo>
+  CLUSTER_NAME: <your-ecs-cluster-name>
+  FRONTEND_SVC: <your-frontend-service-name>
+  BACKEND_SVC: <your-backend-service-name>
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          role-to-assume: arn:aws:iam::<your-account-id>:role/<your-oidc-role-name>
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push frontend image
+        run: |
+          docker build -t frontend:latest ./frontend
+          docker tag frontend:latest $ECR_FRONTEND:latest
+          docker push $ECR_FRONTEND:latest
+
+      - name: Build, tag, and push backend image
+        run: |
+          docker build -t backend:latest ./backend
+          docker tag backend:latest $ECR_BACKEND:latest
+          docker push $ECR_BACKEND:latest
+
+      - name: Update ECS frontend service
+        run: |
+          aws ecs update-service --cluster $CLUSTER_NAME --service $FRONTEND_SVC --force-new-deployment --region $AWS_REGION
+
+      - name: Update ECS backend service
+        run: |
+          aws ecs update-service --cluster $CLUSTER_NAME --service $BACKEND_SVC --force-new-deployment --region $AWS_REGION
+
+
+```
+67. Commit the workflow into the gitops branch
+
+```
+
+git add .
+git commit -m "Set up GitOps workflow with GitHub Actions"
+git push origin gitops
+
+```
+
+![GitOps](/screenshots/gitops.png)
 
 # Optional Extras
 The core requirement for this challenge is to get the provided application up and running for consumption over the public internet. That being said, there are some opportunities in this code challenge to demonstrate your skill sets that are above and beyond the core requirement.

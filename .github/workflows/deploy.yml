@@ -6,12 +6,12 @@ on:
       - gitops
 
 env:
-  AWS_REGION: <region-your-project is located>
-  ECR_FRONTEND: <your-account-id>.dkr.ecr.<region>.amazonaws.com/<your-frontend-repo>
-  ECR_BACKEND: <your-account-id>.dkr.ecr.<region>.amazonaws.com/<your-backend-repo>
-  CLUSTER_NAME: <your-ecs-cluster-name>
-  FRONTEND_SVC: <your-frontend-service-name>
-  BACKEND_SVC: <your-backend-service-name>
+  AWS_REGION: us-east-2
+  ECR_FRONTEND: 149465511648.dkr.ecr.us-east-2.amazonaws.com/devops-challenge-frontend
+  ECR_BACKEND: 149465511648.dkr.ecr.us-east-2.amazonaws.com/devops-challenge-backend
+  CLUSTER_NAME: devops-challenge-cluster
+  FRONTEND_SVC: devops-challenge-frontend-service
+  BACKEND_SVC: devops-challenge-backend-service
 
 jobs:
   build-and-deploy:
@@ -28,7 +28,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v3
         with:
-          role-to-assume: arn:aws:iam::<your-account-id>:role/<your-oidc-role-name>
+          role-to-assume: arn:aws:iam::149465511648:role/<your-oidc-role-name>
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Login to Amazon ECR
