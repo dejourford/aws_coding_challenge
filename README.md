@@ -1640,6 +1640,10 @@ CORS_ORIGIN: 'http://<ALB-DNS>'
 
 ```
 
+57. Push code to GitHub and check Jenkins for the automated build that was triggered by the webhook
+
+![Trigger Build](/screenshots/trigger_build.png)
+
 # Optional Extras
 The core requirement for this challenge is to get the provided application up and running for consumption over the public internet. That being said, there are some opportunities in this code challenge to demonstrate your skill sets that are above and beyond the core requirement.
 
