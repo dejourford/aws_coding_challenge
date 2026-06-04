@@ -1606,6 +1606,39 @@ pipeline {
 51. Go back to Jenkins and Click 'Build Now' to run initial build
 ![Run Build](/screenshots/run_build.png)
 
+Note: You may have to troubleshoot and resolve issues. Utilize ChatGPT or Claude for this.
+
+52. Verify successful build and deployment
+
+![Successful Build](/screenshots/success.png)
+
+53. Check ECR repositories
+
+![ECR](/screenshots/ecr.png)
+
+54. Check ECS repositories
+
+![ECS](/screenshots/ecs_proof.png)
+
+55. Update backend config.js to refelct ALB
+
+```
+
+module.exports = {
+CORS_ORIGIN: 'http://<ALB-DNS>'
+};
+
+```
+
+56. Update frontend config.js to refelct ALB
+
+```
+
+module.exports = {
+CORS_ORIGIN: 'http://<ALB-DNS>'
+};
+
+```
 
 # Optional Extras
 The core requirement for this challenge is to get the provided application up and running for consumption over the public internet. That being said, there are some opportunities in this code challenge to demonstrate your skill sets that are above and beyond the core requirement.
