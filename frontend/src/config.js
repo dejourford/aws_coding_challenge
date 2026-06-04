@@ -1,2 +1,4 @@
-export const API_URL = 'backend:8080/'
+export const API_URL = 'http://devops-challenge-alb-633282648.us-east-2.elb.amazonaws.com/api'
 export default API_URL
+
+
