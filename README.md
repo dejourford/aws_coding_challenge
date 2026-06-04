@@ -1063,9 +1063,6 @@ data "aws_ami" "amazon_linux_2023" {
 #------------------------------------------------------------------
 # Jenkins Master EC2 Instance
 #------------------------------------------------------------------
-#------------------------------------------------------------------
-# Jenkins Master EC2 Instance
-#------------------------------------------------------------------
 resource "aws_instance" "jenkins_master" {
   ami           = data.aws_ami.amazon_linux_2023.id
   instance_type = "t3.small"
