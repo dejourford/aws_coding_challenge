@@ -3,30 +3,28 @@
 ## Objective
 This challenge involves deploying a React frontend and Express backend application to AWS using ECS with Fargate. All application infrastructure is provisioned using Terraform, and deployments are automated through a Jenkins CI/CD pipeline. The frontend is publicly accessible over the internet and connects to the backend service running as containers on ECS.
 
-## Procedure
-1. Clone Repo
+---
 
+## Phase 1: Local Setup & Application Validation
+
+### Step 1.1: Clone the repository
 ```
- git clone https://github.com/TayoLusi19/devops-code-challenge1.git
-
-```
-2. Update and refresh Packages
-
-```
- sudo apt update && sudo apt upgrade -y
-
+git clone https://github.com/TayoLusi19/devops-code-challenge1.git
 ```
 
-3. Install NodeJS
-
+### Step 1.2: Update and refresh packages
 ```
- sudo apt install nodejs
-
+sudo apt update && sudo apt upgrade -y
 ```
-4. Install Terraform
 
+### Step 1.3: Install Node.js
 ```
- # Add HashiCorp GPG key and repo
+sudo apt install nodejs
+```
+
+### Step 1.4: Install Terraform
+```
+# Add HashiCorp GPG key and repo
 wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
 
 echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
@@ -35,10 +33,9 @@ sudo apt update && sudo apt install terraform -y
 
 # Verify
 terraform -v
-
 ```
-5. Install Docker
 
+### Step 1.5: Install Docker
 ```
 sudo apt install docker.io -y
 sudo systemctl start docker
@@ -46,51 +43,42 @@ sudo systemctl enable docker
 
 # Add your user to docker group so you don't need sudo
 sudo usermod -aG docker $USER
-
 ```
 
-6. Log out and back in for group change to take effect (kill terminal and open new one)
+### Step 1.6: Log out and back in for group change to take effect
 
-7. Initialize the backend
-
+### Step 1.7: Initialize the backend
 ```
-
 cd backend
 npm ci
 npm start
-
 ```
 ![Backend](/screenshots/back_end.png)
 
+### Step 1.8: Navigate to localhost:8080 to verify the backend is running
 
-8. Navigate to localhost:8080 to get a response to a GET request.
-
-9. Initialize the frontend
-
+### Step 1.9: Initialize the frontend
 ```
-
 cd frontend
 npm ci
 npm start
-
 ```
-
-10. Navigate to localhost:3000 to view the frontend web page.
-
 ![Frontend](/screenshots/front_end.png)
 
-11. Create Dockerfiles for the backend and frontend
+### Step 1.10: Navigate to localhost:3000 to view the frontend web page
 
+---
+
+## Phase 2: Containerization & Local Testing
+
+### Step 2.1: Create Dockerfiles
 ```
 touch ~/projects/aws_coding_challenge/backend/Dockerfile
 touch ~/projects/aws_coding_challenge/frontend/Dockerfile
-
 ```
 
-12. Copy and paste the following into the backend Dockerfile
-
+### Step 2.2: Add the following to the backend Dockerfile
 ```
-
 FROM node:16
 WORKDIR /app
 COPY package*.json ./
@@ -98,13 +86,10 @@ RUN npm ci
 COPY . .
 EXPOSE 8080
 CMD ["npm", "start"]
-
 ```
 
-13. Copy and paste the following into the frontend Dockerfile
-
+### Step 2.3: Add the following to the frontend Dockerfile
 ```
-
 FROM node:16
 WORKDIR /app
 COPY package*.json ./
@@ -114,32 +99,16 @@ RUN npm run build
 RUN npm install -g serve
 EXPOSE 3000
 CMD ["serve", "-s", "build"]
-
 ```
 
-14. Update frontend config
-
+### Step 2.4: Update frontend config for local development
 ```
 export const API_URL = 'http://localhost:8080/'
 export default API_URL
-
 ```
 
-15. Update the app.get code block
-
-```
-
-app.get(/.*/, (req, res) => {
-    console.log(`${new Date().toISOString()} GET`)
-    res.json({ message: `SUCCESS ${ID}` })
-})
-
-```
-
-16. Update the useEffect() hook
-
-```
-
+### Step 2.5: Update the useEffect() hook
+```javascript
 useEffect(() => {
     const getId = async () => {
       try {
@@ -153,13 +122,10 @@ useEffect(() => {
     }
     getId()
   })
-
-  ```
-
-17. Build both Docker containers
-
 ```
 
+### Step 2.6: Build both Docker containers
+```
 # Build backend
 cd ~/projects/aws_coding_challenge/backend
 sudo docker build -t backend-app .
@@ -167,59 +133,39 @@ sudo docker build -t backend-app .
 # Build frontend
 cd ~/projects/aws_coding_challenge/frontend
 sudo docker build -t frontend-app .
-
 ```
 
-18. Run both containers
-
+### Step 2.7: Run both containers
 ```
-
 sudo docker run -d --name backend -p 8080:8080 backend-app
 sudo docker run -d --name frontend -p 3000:3000 frontend-app
-
-```
-17. Update frontend config
-
 ```
 
+### Step 2.8: Update frontend config to use container name
+```
 export const API_URL = 'backend:8080/'
 export default API_URL
-
 ```
 
-18. Configure AWS Account
+---
 
+## Phase 3: Infrastructure Provisioning (Terraform)
+
+### Step 3.1: Configure AWS credentials
 ```
-
 aws configure
-
 ```
 ![AWS Configure](/screenshots/aws_configure.png)
 
-19. Create a Terraform Directory and files in project root directory
-
+### Step 3.2: Create Terraform directory and files
 ```
-
 cd ~/projects/aws_coding_challenge
 mkdir terraform
-touch main.tf
-touch outputs.tf
-touch provider.tf
-touch variables.tf
-touch vpc.tf
-touch ecr.tf
-touch ecs.tf
-touch sg.tf
-touch lb.tf
-touch fargate.tf
-touch jenkins_server.tf
-
+touch main.tf outputs.tf provider.tf variables.tf vpc.tf ecr.tf ecs.tf sg.tf lb.tf fargate.tf jenkins_server.tf
 ```
 
-20. Add providers resource block to provider.tf 
-
-```
-
+### Step 3.3: Add provider block to provider.tf
+```hcl
 terraform {
   required_providers {
     aws = {
@@ -231,14 +177,11 @@ terraform {
 
 provider "aws" {
   region = var.aws_region
-} 
-
+}
 ```
 
-21. Add VPC and networking resource blocks to vpc.tf
-
-```
-
+### Step 3.4: Add VPC and networking resources to vpc.tf
+```hcl
 # VPC
 resource "aws_vpc" "main" {
   cidr_block           = var.vpc_cidr
@@ -257,7 +200,6 @@ resource "aws_subnet" "public" {
   vpc_id            = aws_vpc.main.id
   cidr_block        = cidrsubnet(var.vpc_cidr, 8, count.index)
   availability_zone = count.index == 0 ? "us-east-2a" : "us-east-2b"
-
   map_public_ip_on_launch = true
 
   tags = {
@@ -350,17 +292,11 @@ resource "aws_route_table_association" "private" {
   count          = 2
   subnet_id      = aws_subnet.private[count.index].id
   route_table_id = aws_route_table.private.id
-} 
-
+}
 ```
 
-22. Add resource blocks to ecs.tf
-
-```
-
-#------------------------------------------------------------------
-# ECS Cluster
-#------------------------------------------------------------------
+### Step 3.5: Add ECS cluster and service resources to ecs.tf
+```hcl
 resource "aws_ecs_cluster" "main" {
   name = "${var.project_name}-cluster"
 
@@ -375,9 +311,6 @@ resource "aws_ecs_cluster" "main" {
   }
 }
 
-#------------------------------------------------------------------
-# CloudWatch Log Groups
-#------------------------------------------------------------------
 resource "aws_cloudwatch_log_group" "frontend" {
   name              = "/ecs/${var.project_name}-frontend"
   retention_in_days = 7
@@ -398,9 +331,6 @@ resource "aws_cloudwatch_log_group" "backend" {
   }
 }
 
-#------------------------------------------------------------------
-# Frontend Task Definition
-#------------------------------------------------------------------
 resource "aws_ecs_task_definition" "frontend" {
   family                   = "${var.project_name}-frontend"
   network_mode             = "awsvpc"
@@ -414,21 +344,8 @@ resource "aws_ecs_task_definition" "frontend" {
     {
       name  = "frontend"
       image = var.frontend_image != "" ? var.frontend_image : "${aws_ecr_repository.frontend.repository_url}:latest"
-      
-      portMappings = [
-        {
-          containerPort = var.frontend_port
-          protocol      = "tcp"
-        }
-      ]
-
-      environment = [
-        {
-          name  = "REACT_APP_BACKEND_URL"
-          value = "http://${aws_lb.main.dns_name}"
-        }
-      ]
-
+      portMappings = [{ containerPort = var.frontend_port, protocol = "tcp" }]
+      environment = [{ name = "REACT_APP_BACKEND_URL", value = "http://${aws_lb.main.dns_name}" }]
       logConfiguration = {
         logDriver = "awslogs"
         options = {
@@ -437,7 +354,6 @@ resource "aws_ecs_task_definition" "frontend" {
           awslogs-stream-prefix = "ecs"
         }
       }
-
       essential = true
     }
   ])
@@ -448,9 +364,6 @@ resource "aws_ecs_task_definition" "frontend" {
   }
 }
 
-#------------------------------------------------------------------
-# Backend Task Definition
-#------------------------------------------------------------------
 resource "aws_ecs_task_definition" "backend" {
   family                   = "${var.project_name}-backend"
   network_mode             = "awsvpc"
@@ -464,21 +377,8 @@ resource "aws_ecs_task_definition" "backend" {
     {
       name  = "backend"
       image = var.backend_image != "" ? var.backend_image : "${aws_ecr_repository.backend.repository_url}:latest"
-      
-      portMappings = [
-        {
-          containerPort = var.backend_port
-          protocol      = "tcp"
-        }
-      ]
-
-      environment = [
-        {
-          name  = "CORS_ORIGIN"
-          value = "http://${aws_lb.main.dns_name}"
-        }
-      ]
-
+      portMappings = [{ containerPort = var.backend_port, protocol = "tcp" }]
+      environment = [{ name = "CORS_ORIGIN", value = "http://${aws_lb.main.dns_name}" }]
       logConfiguration = {
         logDriver = "awslogs"
         options = {
@@ -487,7 +387,6 @@ resource "aws_ecs_task_definition" "backend" {
           awslogs-stream-prefix = "ecs"
         }
       }
-
       essential = true
     }
   ])
@@ -498,9 +397,6 @@ resource "aws_ecs_task_definition" "backend" {
   }
 }
 
-#------------------------------------------------------------------
-# Frontend Service
-#------------------------------------------------------------------
 resource "aws_ecs_service" "frontend" {
   name            = "${var.project_name}-frontend-service"
   cluster         = aws_ecs_cluster.main.id
@@ -528,9 +424,6 @@ resource "aws_ecs_service" "frontend" {
   }
 }
 
-#------------------------------------------------------------------
-# Backend Service
-#------------------------------------------------------------------
 resource "aws_ecs_service" "backend" {
   name            = "${var.project_name}-backend-service"
   cluster         = aws_ecs_cluster.main.id
@@ -554,17 +447,11 @@ resource "aws_ecs_service" "backend" {
     Name        = "${var.project_name}-backend-service"
     Environment = var.environment
   }
-} 
-
+}
 ```
 
-23. Add resource blocks to ecr.tf
-
-```
-
-#------------------------------------------------------------------
-# ECR Repositories
-#------------------------------------------------------------------
+### Step 3.6: Add ECR repositories to ecr.tf
+```hcl
 resource "aws_ecr_repository" "frontend" {
   name                 = "${var.project_name}-frontend"
   image_tag_mutability = "MUTABLE"
@@ -593,28 +480,21 @@ resource "aws_ecr_repository" "backend" {
   }
 }
 
-#------------------------------------------------------------------
-# ECR Lifecycle Policy
-#------------------------------------------------------------------
 resource "aws_ecr_lifecycle_policy" "frontend" {
   repository = aws_ecr_repository.frontend.name
 
   policy = jsonencode({
-    rules = [
-      {
-        rulePriority = 1
-        description  = "Keep last 5 images"
-        selection = {
-          tagStatus     = "tagged"
-          tagPrefixList = ["v"]
-          countType     = "imageCountMoreThan"
-          countNumber   = 5
-        }
-        action = {
-          type = "expire"
-        }
+    rules = [{
+      rulePriority = 1
+      description  = "Keep last 5 images"
+      selection = {
+        tagStatus     = "tagged"
+        tagPrefixList = ["v"]
+        countType     = "imageCountMoreThan"
+        countNumber   = 5
       }
-    ]
+      action = { type = "expire" }
+    }]
   })
 }
 
@@ -622,33 +502,23 @@ resource "aws_ecr_lifecycle_policy" "backend" {
   repository = aws_ecr_repository.backend.name
 
   policy = jsonencode({
-    rules = [
-      {
-        rulePriority = 1
-        description  = "Keep last 5 images"
-        selection = {
-          tagStatus     = "tagged"
-          tagPrefixList = ["v"]
-          countType     = "imageCountMoreThan"
-          countNumber   = 5
-        }
-        action = {
-          type = "expire"
-        }
+    rules = [{
+      rulePriority = 1
+      description  = "Keep last 5 images"
+      selection = {
+        tagStatus     = "tagged"
+        tagPrefixList = ["v"]
+        countType     = "imageCountMoreThan"
+        countNumber   = 5
       }
-    ]
+      action = { type = "expire" }
+    }]
   })
-} 
-
+}
 ```
 
-24. Add resource blocks to sg.tf
-
-```
-
-#------------------------------------------------------------------
-# Security Groups
-#------------------------------------------------------------------
+### Step 3.7: Add security groups and IAM roles to sg.tf
+```hcl
 resource "aws_security_group" "alb" {
   name        = "${var.project_name}-alb-sg"
   description = "Security group for Application Load Balancer"
@@ -743,7 +613,6 @@ resource "aws_security_group" "backend" {
   }
 }
 
-# Jenkins Security Group
 resource "aws_security_group" "jenkins" {
   name        = "${var.project_name}-jenkins-sg"
   description = "Security group for Jenkins server"
@@ -794,23 +663,16 @@ resource "aws_security_group" "jenkins" {
   }
 }
 
-#------------------------------------------------------------------
-# IAM Roles
-#------------------------------------------------------------------
 resource "aws_iam_role" "ecs_task_execution_role" {
   name = "${var.project_name}-ecs-task-execution-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "ecs-tasks.amazonaws.com"
-        }
-      }
-    ]
+    Statement = [{
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
+      Principal = { Service = "ecs-tasks.amazonaws.com" }
+    }]
   })
 }
 
@@ -824,55 +686,36 @@ resource "aws_iam_role" "ecs_task_role" {
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "ecs-tasks.amazonaws.com"
-        }
-      }
-    ]
+    Statement = [{
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
+      Principal = { Service = "ecs-tasks.amazonaws.com" }
+    }]
   })
 }
 
-#------------------------------------------------------------------
-# CloudWatch Logs policy for ECS tasks
-#------------------------------------------------------------------
 resource "aws_iam_policy" "ecs_task_logs" {
   name        = "${var.project_name}-ecs-task-logs"
   description = "Allow ECS tasks to write to CloudWatch Logs"
 
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "logs:CreateLogGroup",
-          "logs:CreateLogStream",
-          "logs:PutLogEvents"
-        ]
-        Resource = "*"
-      }
-    ]
+    Statement = [{
+      Effect   = "Allow"
+      Action   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
+      Resource = "*"
+    }]
   })
 }
 
 resource "aws_iam_role_policy_attachment" "ecs_task_logs" {
   role       = aws_iam_role.ecs_task_role.name
   policy_arn = aws_iam_policy.ecs_task_logs.arn
-} 
-
+}
 ```
 
-25. Add resource block to lb.tf
-
-```
-
-#------------------------------------------------------------------
-# Application Load Balancer
-#------------------------------------------------------------------
+### Step 3.8: Add load balancer resources to lb.tf
+```hcl
 resource "aws_lb" "main" {
   name               = "${var.project_name}-alb"
   internal           = false
@@ -888,9 +731,6 @@ resource "aws_lb" "main" {
   }
 }
 
-#------------------------------------------------------------------
-# ALB Target Group for Frontend
-#------------------------------------------------------------------
 resource "aws_lb_target_group" "frontend" {
   name        = "${var.project_name}-frontend-tg"
   port        = var.frontend_port
@@ -916,9 +756,6 @@ resource "aws_lb_target_group" "frontend" {
   }
 }
 
-#------------------------------------------------------------------
-# ALB Target Group for Backend
-#------------------------------------------------------------------
 resource "aws_lb_target_group" "backend" {
   name        = "${var.project_name}-backend-tg"
   port        = var.backend_port
@@ -944,9 +781,6 @@ resource "aws_lb_target_group" "backend" {
   }
 }
 
-#------------------------------------------------------------------
-# ALB Listener
-#------------------------------------------------------------------
 resource "aws_lb_listener" "frontend" {
   load_balancer_arn = aws_lb.main.arn
   port              = "80"
@@ -958,9 +792,6 @@ resource "aws_lb_listener" "frontend" {
   }
 }
 
-#------------------------------------------------------------------
-# ALB Listener Rule for Backend API
-#------------------------------------------------------------------
 resource "aws_lb_listener_rule" "backend" {
   listener_arn = aws_lb_listener.frontend.arn
   priority     = 100
@@ -975,18 +806,11 @@ resource "aws_lb_listener_rule" "backend" {
       values = ["/api", "/api/*"]
     }
   }
-} 
-
-
+}
 ```
 
-26. Add resource blocks to fargate.tf
-
-```
-
-#------------------------------------------------------------------
-# Auto Scaling for Frontend Service
-#------------------------------------------------------------------
+### Step 3.9: Add auto scaling resources to fargate.tf
+```hcl
 resource "aws_appautoscaling_target" "frontend" {
   max_capacity       = var.max_tasks
   min_capacity       = var.min_tasks
@@ -1010,9 +834,6 @@ resource "aws_appautoscaling_policy" "frontend_cpu" {
   }
 }
 
-#------------------------------------------------------------------
-# Auto Scaling for Backend Service
-#------------------------------------------------------------------
 resource "aws_appautoscaling_target" "backend" {
   max_capacity       = var.max_tasks
   min_capacity       = var.min_tasks
@@ -1034,17 +855,11 @@ resource "aws_appautoscaling_policy" "backend_cpu" {
     }
     target_value = var.cpu_threshold
   }
-} 
-
+}
 ```
 
-27. Add resource blocks to jenkins_server.tf
-
-```
-
-#------------------------------------------------------------------
-# Data source for latest Amazon Linux 2023 AMI
-#------------------------------------------------------------------
+### Step 3.10: Add Jenkins EC2 instance to jenkins_server.tf
+```hcl
 data "aws_ami" "amazon_linux_2023" {
   most_recent = true
   owners      = ["amazon"]
@@ -1060,9 +875,6 @@ data "aws_ami" "amazon_linux_2023" {
   }
 }
 
-#------------------------------------------------------------------
-# Jenkins Master EC2 Instance
-#------------------------------------------------------------------
 resource "aws_instance" "jenkins_master" {
   ami           = data.aws_ami.amazon_linux_2023.id
   instance_type = "t3.small"
@@ -1094,9 +906,6 @@ resource "aws_instance" "jenkins_master" {
   }
 }
 
-#------------------------------------------------------------------
-# Elastic IP for Jenkins Master
-#------------------------------------------------------------------
 resource "aws_eip" "jenkins_master" {
   instance = aws_instance.jenkins_master.id
   domain   = "vpc"
@@ -1105,15 +914,11 @@ resource "aws_eip" "jenkins_master" {
     Name        = "${var.project_name}-jenkins-master-eip"
     Environment = var.environment
   }
-} 
-
-
+}
 ```
 
-28. Add variables to variables.tf
-
-```
-
+### Step 3.11: Add variables to variables.tf
+```hcl
 variable "aws_region" {
   description = "AWS region"
   type        = string
@@ -1208,37 +1013,16 @@ variable "cpu_threshold" {
   description = "CPU utilization threshold for auto scaling"
   type        = number
   default     = 50
-} 
-
+}
 ```
 
-29. (Optional) Add outputs to outputs.tf
-
-```
-
-# VPC Outputs
+### Step 3.12: Add outputs to outputs.tf (optional)
+```hcl
 output "vpc_id" {
   description = "ID of the VPC"
   value       = aws_vpc.main.id
 }
 
-output "vpc_cidr" {
-  description = "CIDR block of the VPC"
-  value       = aws_vpc.main.cidr_block
-}
-
-# Subnet Outputs
-output "public_subnet_ids" {
-  description = "IDs of the public subnets"
-  value       = aws_subnet.public[*].id
-}
-
-output "private_subnet_ids" {
-  description = "IDs of the private subnets"
-  value       = aws_subnet.private[*].id
-}
-
-# ECR Outputs
 output "frontend_repository_url" {
   description = "URL of the frontend ECR repository"
   value       = aws_ecr_repository.frontend.repository_url
@@ -1249,83 +1033,31 @@ output "backend_repository_url" {
   value       = aws_ecr_repository.backend.repository_url
 }
 
-# ALB Outputs
 output "alb_dns_name" {
   description = "DNS name of the Application Load Balancer"
   value       = aws_lb.main.dns_name
 }
 
-output "alb_zone_id" {
-  description = "Zone ID of the Application Load Balancer"
-  value       = aws_lb.main.zone_id
-}
-
-# ECS Outputs
 output "ecs_cluster_name" {
   description = "Name of the ECS cluster"
   value       = aws_ecs_cluster.main.name
-}
-
-output "ecs_cluster_arn" {
-  description = "ARN of the ECS cluster"
-  value       = aws_ecs_cluster.main.arn
-}
-
-# Jenkins Outputs
-output "jenkins_master_public_ip" {
-  description = "Public IP address of the Jenkins master instance"
-  value       = aws_eip.jenkins_master.public_ip
-}
-
-output "jenkins_master_instance_id" {
-  description = "Instance ID of the Jenkins master"
-  value       = aws_instance.jenkins_master.id
 }
 
 output "jenkins_url" {
   description = "URL to access Jenkins"
   value       = "http://${aws_eip.jenkins_master.public_ip}:8080"
 }
-
-# Security Group Outputs
-output "jenkins_security_group_id" {
-  description = "ID of the Jenkins security group"
-  value       = aws_security_group.jenkins.id
-}
-
-output "alb_security_group_id" {
-  description = "ID of the ALB security group"
-  value       = aws_security_group.alb.id
-}
-
-# IAM Role Outputs
-output "ecs_task_execution_role_arn" {
-  description = "ARN of the ECS task execution role"
-  value       = aws_iam_role.ecs_task_execution_role.arn
-}
-
-output "ecs_task_role_arn" {
-  description = "ARN of the ECS task role"
-  value       = aws_iam_role.ecs_task_role.arn
-} 
-
 ```
 
-30. Create Key Pair for EC2 Instance and copy it to the .ssh directory
-
+### Step 3.13: Create a key pair for the EC2 instance
 ```
-
 aws ec2 create-key-pair --key-name 1PU --query 'KeyMaterial' --output text > 1PU.pem
 chmod 400 1PU.pem
 cp 1PU.pem ~/.ssh/
-
-
 ```
 
-31. add items to the .gitignore file
-
+### Step 3.14: Add items to .gitignore
 ```
-
 node_modules
 .pem
 terraform/.terraform/
@@ -1333,184 +1065,132 @@ terraform/.terraform.lock.hcl
 terraform/*.pem
 terraform/*.tfstate
 terraform/*.tfstate.backup
-
-
 ```
-
-
 ![Git Ignore File](/screenshots/git_ignore.png)
 
-
-
-
-32. Navigate to terraform directory and apply Terraform
-
+### Step 3.15: Apply Terraform
 ```
 cd ~/projects/aws_coding_challenge/terraform
 terraform init
 terraform apply
-
 ```
 
-33. Validate AWS resources on the AWS Console by checking ECS cluster, ALB DNS, VPC, and other related services for this project.
+### Step 3.16: Validate AWS resources on the AWS Console
+Check ECS cluster, ALB DNS, VPC, and related services.
 
 ![EC2](/screenshots/ec2.png)
 ![ECS](/screenshots/ecs.png)
 ![VPC](/screenshots/vpc.png)
 
-34. Push Terraform code to GitHub
-
+### Step 3.17: Push Terraform code to GitHub
 ```
-
 git add terraform
 git commit -m "add terraform files"
 git push
-
 ```
 
-35. SSH into the Master/Jenkins EC2 using the .pem key created earlier.
+---
+
+## Phase 4: Jenkins Setup on AWS
+
+### Step 4.1: SSH into the Jenkins EC2 instance
+```
+ssh -i ~/.ssh/1PU.pem ec2-user@<Jenkins-EC2-Public-IP>
+```
 ![SSH](/screenshots/ssh.png)
 
-36. Update the system
-
+### Step 4.2: Update the system
 ```
-
 sudo dnf update && sudo dnf upgrade
-
 ```
 
-37. Install Jenkins
-
+### Step 4.3: Install Docker
 ```
-
-# Install wget
-sudo dnf install wget -y
-
-# Add Jenkins repo
-sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
-sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
-
-# Now install Jenkins
-sudo dnf install jenkins -y
-
-# Start and enable
-sudo systemctl start jenkins
-sudo systemctl enable jenkins
-
-```
-
-38. Install Docker
-
-```
-
 sudo dnf install docker -y
 sudo systemctl start docker
 sudo systemctl enable docker
 sudo systemctl status docker
-
 ```
 
-39. Add Jenkins to the Docker group so it can run Docker commands
-
+### Step 4.4: Add Jenkins to the Docker group
 ```
-
 sudo usermod -aG docker jenkins
 sudo systemctl restart jenkins
-
 ```
 
-40. Verify Jenkins is running by verifying t he UI on our web browser
+> **Note:** Jenkins and Java 21 are pre-installed on boot via the `user_data` script in `jenkins_server.tf`. No manual installation is required.
 
+### Step 4.5: Verify Jenkins is running
+Navigate to:
 ```
-http://<Jenkins-EC2-Public-IP-Address>:8080
-
+http://<Jenkins-EC2-Public-IP>:8080
 ```
-
 ![Jenkins](/screenshots/jenkins.png)
 
-41. Get secret admin password to login
-
+### Step 4.6: Get the initial admin password
 ```
-
 sudo cat /var/lib/jenkins/secrets/initialAdminPassword
-
 ```
 
-42. Click "Install suggested plugins"
+### Step 4.7: Install suggested plugins
+Click "Install suggested plugins" when prompted.
 
 ![Plugins](/screenshots/plugins.png)
 
-
-43. (Optional) Create an admin user so that it's not necessary to input the secret password again.
-
+### Step 4.8: (Optional) Create an admin user
 ![Admin](/screenshots/admin.png)
 
-44. Confirm the IP Address
+### Step 4.9: Install additional plugins
+Navigate to **Manage Jenkins → Plugins → Available Plugins** and install:
+- Docker
+- Amazon EC2
+- Amazon Elastic Container Service (ECS) / Fargate
 
-45. Navigate to Settings --> Manage Jenkins --> Plugins --> Available Plugins and install the following:
-  - Docker
-  - Amazon EC2
-  - Amazon Elastic Container Service (ECS) / Fargate
-
-46. Since there is no AWS CLI plugin, we will need to install AWS CLI on the jenkins container
-
+### Step 4.10: Install AWS CLI on the Jenkins server
 ```
-
 sudo dnf install awscli -y
 aws --version
-
 ```
 
-47. Navigate to Manage Jenkins --> Credentials --> System --> Global --> add credentials
-  
-  - GitHub PAT Token
-    - Select 'Username with password' and click 'Next'
-    - Username = your GitHub username.
-    - Password = your GitHub personal access token
-      - How to create a GitHub personal access token:
-        1. Click Profile icon in top right corner and click 'Settings'
-        2. Scroll down to 'Developer Settings' on the left sidebar
-        3. Click 'Personal access tokens' on the left sidebar
-        4. Select 'Tokens (classic)'
-        5. Select 'Generate new token'
-        6. Select 'Generate new token (classic)'
-        7. Name the token in the Notes Input Field
-        8. Select the 'repo' and 'admin:repo_hook' checkboxes
-        9. Click 'Generate Token'
-        10. Copy the token immediately because you will NOT see it again
-    - (Optional) Give it an ID (ex. github_pat)
-    - Click 'Create'
+### Step 4.11: Configure Jenkins credentials
+Navigate to **Manage Jenkins → Credentials → System → Global → Add Credentials**
 
-  - AWS Credentials
-    - Select 'AWS Credentials'
-    - Click 'Next'
-    - ID = name your credentials
-    - Access ID = Access ID of your IAM User
-    - Secret Access Key = Secret Access Key of your IAM User
-      - How to retreive Access ID and Secret Access Keys:
-        1. Go to IAM --> Users
-        2. Click your user
-        3. Go to 'Security Credentials' tab
-        4. Scroll to 'Access Keys' and click 'Create access key'
-        5. Select CLI as the use case, select the confirmation checkbox and click 'Next'
-        6. Enter a description (ex. jenkins_key) and click 'Create Key'
-        7. Copy the Access Key ID and Secret Access Key because you will NOT see them again.
-    - Click 'Create'
+**GitHub PAT Token:**
+1. Kind: Username with password
+2. Username: your GitHub username
+3. Password: your GitHub personal access token
+4. ID: `github_pat`
 
-48. In your local machine, navigate to the root project directory and create a Jenkinsfile
+To create a GitHub PAT:
+1. Click your profile icon → Settings
+2. Scroll to Developer Settings → Personal access tokens → Tokens (classic)
+3. Click Generate new token (classic)
+4. Select `repo` and `admin:repo_hook` checkboxes
+5. Click Generate Token and copy it immediately
 
-```
+**AWS Credentials:**
+1. Kind: AWS Credentials
+2. ID: `aws_keys`
+3. Access Key ID and Secret Access Key from your IAM user
 
+To retrieve AWS credentials:
+1. Go to IAM → Users → your user
+2. Security Credentials tab → Create access key
+3. Select CLI use case and copy the keys immediately
+
+---
+
+## Phase 5: CI/CD Pipeline with Jenkins
+
+### Step 5.1: Create a Jenkinsfile in the project root
+```groovy
 pipeline {
     agent any
 
     environment {
-        // ====> Replace with your AWS region, e.g., 'us-east-1'
-        AWS_REGION = 'your-aws-region'
-
-        // ====> Replace with your own ECR repository URIs
-        FRONTEND_REPO = 'your-frontend-ecr-repo-uri'
-        BACKEND_REPO  = 'your-backend-ecr-repo-uri'
+        AWS_REGION    = 'us-east-2'
+        FRONTEND_REPO = '<your-account-id>.dkr.ecr.us-east-2.amazonaws.com/devops-challenge-frontend'
+        BACKEND_REPO  = '<your-account-id>.dkr.ecr.us-east-2.amazonaws.com/devops-challenge-backend'
     }
 
     stages {
@@ -1531,7 +1211,7 @@ pipeline {
 
         stage('Authenticate to ECR') {
             steps {
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'your-aws-credentials-id']]) {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws_keys']]) {
                     script {
                         sh '''
                             aws --version
@@ -1549,7 +1229,6 @@ pipeline {
                     sh '''
                         docker tag frontend:latest $FRONTEND_REPO:latest
                         docker tag backend:latest $BACKEND_REPO:latest
-
                         docker push $FRONTEND_REPO:latest
                         docker push $BACKEND_REPO:latest
                     '''
@@ -1559,11 +1238,11 @@ pipeline {
 
         stage('Update ECS services') {
             steps {
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'your-aws-credentials-id']]) {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws_keys']]) {
                     script {
                         sh '''
-                            aws ecs update-service --cluster your-ecs-cluster-name --service your-frontend-service-name --force-new-deployment --region $AWS_REGION
-                            aws ecs update-service --cluster your-ecs-cluster-name --service your-backend-service-name --force-new-deployment --region $AWS_REGION
+                            aws ecs update-service --cluster devops-challenge-cluster --service devops-challenge-frontend-service --force-new-deployment --region $AWS_REGION
+                            aws ecs update-service --cluster devops-challenge-cluster --service devops-challenge-backend-service --force-new-deployment --region $AWS_REGION
                         '''
                     }
                 }
@@ -1577,81 +1256,78 @@ pipeline {
         }
     }
 }
-
 ```
 
-49. Create a Jenkins Pipeline
-  
-  1. Go to Jenkins Home Page and click 'Create a job'
-  2. Create a name for the pipeline
-  3. Select 'Pipeline' and click 'OK'
-  4. Scroll down to 'Triggers' and Select 'GitHub hook trigger for GITScm polling'
-  5. Scroll down to 'Pipeline'
-  6. Click the 'Definition' dropdown and Select 'Pipeline from SCM'
-  7. Click the 'SCM' dropdown and Select 'Git'
-  8. Enter the GitHub repository url (ex. https://github.com/github_project_name.git)
-  9. Under the 'Credentials' dropdown, Select the GitHub PAT credentials created earlier
-  10. Scroll down to 'Branches to build' and type '*/main'
-  11. Click 'Save'
+### Step 5.2: Create a Jenkins Pipeline job
+1. Go to Jenkins home → Create a job
+2. Name the pipeline and select Pipeline → OK
+3. Under Triggers, select **GitHub hook trigger for GITScm polling**
+4. Under Pipeline, set Definition to **Pipeline from SCM**
+5. SCM: Git
+6. Repository URL: `https://github.com/<your-username>/aws_coding_challenge.git`
+7. Credentials: select your GitHub PAT
+8. Branch: `*/main`
+9. Click Save
 
-50. Create a GitHub Webhook in GitHub
-  1. Go to your github repository
-  2. Click 'Settings'
-  3. Select 'Webhooks' in the left sidebar under 'Code and automation'
-  4. Click 'Add webhook'
-  5. Payload URL = http://<your-ec2-public-ip>:8080/github-webhook/
-  6. Content Type = application/json
-  7. Click 'Add webhook'
+### Step 5.3: Create a GitHub Webhook
+1. Go to your GitHub repo → Settings → Webhooks → Add webhook
+2. Payload URL: `http://<your-ec2-public-ip>:8080/github-webhook/`
+3. Content Type: `application/json`
+4. Click Add webhook
 
-51. Go back to Jenkins and Click 'Build Now' to run initial build
+### Step 5.4: Run the initial build
+Click **Build Now** and troubleshoot any issues.
+
 ![Run Build](/screenshots/run_build.png)
 
-Note: You may have to troubleshoot and resolve issues. Utilize ChatGPT or Claude for this.
+---
 
-52. Verify successful build and deployment
+## Phase 6: Deploy Application and Validate
 
+### Step 6.1: Verify successful build and deployment
 ![Successful Build](/screenshots/success.png)
 
-53. Check ECR repositories
-
+### Step 6.2: Check ECR repositories
+Confirm images are updated.
 ![ECR](/screenshots/ecr.png)
 
-54. Check ECS repositories
-
+### Step 6.3: Check ECS services
+Verify tasks are running the latest images.
 ![ECS](/screenshots/ecs_proof.png)
 
-55. Update backend config.js to refelct ALB
-
-```
-
+### Step 6.4: Update backend config.js to use the ALB DNS
+```javascript
 module.exports = {
-CORS_ORIGIN: 'http://<ALB-DNS>'
+  CORS_ORIGIN: 'http://<ALB-DNS>'
 };
-
 ```
 
-56. Update frontend config.js to refelct ALB
-
+### Step 6.5: Update frontend config.js to use the ALB DNS
+```javascript
+export const API_URL = 'http://<ALB-DNS>/api/'
+export default API_URL
 ```
 
-module.exports = {
-CORS_ORIGIN: 'http://<ALB-DNS>'
-};
-
+### Step 6.6: Push code to GitHub
+```
+git add .
+git commit -m "Updated frontend and backend config.js to use ALB DNS"
+git push origin main
 ```
 
-57. Push code to GitHub and check Jenkins for the automated build that was triggered by the webhook
-
+### Step 6.7: Verify the Jenkins webhook triggered a new build
 ![Trigger Build](/screenshots/trigger_build.png)
 
-58. Check that the application displays the success message by inputting the ALB DNS into the browser
-
+### Step 6.8: Verify the application in the browser
+Navigate to the ALB DNS in your browser and confirm the SUCCESS message is displayed.
 ![ALB Success](/screenshots/alb_success.png)
 
-59. Install a load test tool (e.g., siege)
+---
 
+## Phase 7: Load Testing and Auto Scaling
+
+### Step 7.1: Install siege
 ```
-
 sudo dnf install gcc make wget -y
 wget http://download.joedog.org/siege/siege-latest.tar.gz
 tar -xzf siege-latest.tar.gz
@@ -1659,72 +1335,56 @@ cd siege-*/
 ./configure
 make
 sudo make install
-
 ```
 
-60. Run Load Test
-
+### Step 7.2: Run load test
 ```
-
-siege -c 250 -t 2M https://<frontend-alb-dns>
-
+siege -c 250 -t 2M http://<frontend-alb-dns>
 ```
-
 ![Load Test](/screenshots/load_test.png)
 
-61. Monitor ECS auto scaling & Document results
+### Step 7.3: Monitor ECS auto scaling and document results
+Confirm tasks scale up and down based on CPU utilization.
 
-![ECS](/screenshots/ecs_events.png)
-
-![ECS Backend](/screenshots/ecs_backend_events.png)
-
+![ECS Events](/screenshots/ecs_events.png)
+![ECS Backend Events](/screenshots/ecs_backend_events.png)
 ![Results](/screenshots/results.png)
 
-62. In the project root directory, create a gitops branch and remove the Jenkinsfile (locally)
+---
 
+## Phase 8: GitOps with GitHub Actions (Bonus)
+
+### Step 8.1: Create a gitops branch and remove the Jenkinsfile
 ```
-
 git checkout -b gitops
 rm Jenkinsfile
-
 ```
 
-63. Create directory for the GitHub Actions workflow
-
+### Step 8.2: Create the GitHub Actions workflow directory
 ```
-
 mkdir -p .github/workflows
-
 ```
 
-64. Configure the OIDC for GitHub Actions
-  1. In AWS Console, go to IAM --> Identity providers
-  2. Click 'Add provider'
-  3. Provider Type = OpenID Connect
-  4. Provider URL = https://token.actions.githubusercontent.com
-  5. Audience = sts.amazonaws.com
-  6. Click 'Add provider'
+### Step 8.3: Configure OIDC for GitHub Actions in AWS
+1. Go to IAM → Identity providers → Add provider
+2. Provider type: OpenID Connect
+3. Provider URL: `https://token.actions.githubusercontent.com`
+4. Audience: `sts.amazonaws.com`
+5. Click Add provider
 
-65. Create an IAM role that GitHub Actions can utilize
-  1. In AWS Console, go to IAM --> Roles --> Create Role
-  2. Trusted entity type = Web identity
-  3. Identity provider = token.actions.githubusercontent.com
-  4. Audience = sts.amazonaws.com
-  5. GitHub organization = Your Github Username
-  6. GitHub Repository = *
-  7. GitHub branch = gitops
-  8. Click 'Next'
-  9. Attach the following policies:
-    - AmazonEC2ContainerRegistryPowerUser
-    - AmazonECS_FullAccess
-  10. Click 'Next'
-  11. Name the role
-  12. Click 'Create role'
+### Step 8.4: Create an IAM role for GitHub Actions
+1. IAM → Roles → Create role
+2. Trusted entity type: Web identity
+3. Identity provider: `token.actions.githubusercontent.com`
+4. Audience: `sts.amazonaws.com`
+5. GitHub organization: your GitHub username
+6. GitHub repository: `*`
+7. GitHub branch: `gitops`
+8. Attach policies: `AmazonEC2ContainerRegistryPowerUser` and `AmazonECS_FullAccess`
+9. Name and create the role
 
-66. In the .github/workflows directory create a deploy.yml file
-
-```
-
+### Step 8.5: Create .github/workflows/deploy.yml
+```yaml
 name: Deploy to ECS
 
 on:
@@ -1733,12 +1393,12 @@ on:
       - gitops
 
 env:
-  AWS_REGION: <region-your-project is located>
-  ECR_FRONTEND: <your-account-id>.dkr.ecr.<region>.amazonaws.com/<your-frontend-repo>
-  ECR_BACKEND: <your-account-id>.dkr.ecr.<region>.amazonaws.com/<your-backend-repo>
-  CLUSTER_NAME: <your-ecs-cluster-name>
-  FRONTEND_SVC: <your-frontend-service-name>
-  BACKEND_SVC: <your-backend-service-name>
+  AWS_REGION:    us-east-2
+  ECR_FRONTEND:  <your-account-id>.dkr.ecr.us-east-2.amazonaws.com/devops-challenge-frontend
+  ECR_BACKEND:   <your-account-id>.dkr.ecr.us-east-2.amazonaws.com/devops-challenge-backend
+  CLUSTER_NAME:  devops-challenge-cluster
+  FRONTEND_SVC:  devops-challenge-frontend-service
+  BACKEND_SVC:   devops-challenge-backend-service
 
 jobs:
   build-and-deploy:
@@ -1781,40 +1441,25 @@ jobs:
       - name: Update ECS backend service
         run: |
           aws ecs update-service --cluster $CLUSTER_NAME --service $BACKEND_SVC --force-new-deployment --region $AWS_REGION
-
-
-```
-67. Commit the workflow into the gitops branch
-
 ```
 
+### Step 8.6: Commit and push to the gitops branch
+```
 git add .
 git commit -m "Set up GitOps workflow with GitHub Actions"
 git push origin gitops
-
 ```
 
+### Step 8.7: Verify the GitHub Actions workflow ran successfully
+Check the **Actions** tab in your GitHub repo.
 ![GitOps](/screenshots/gitops.png)
-
-68. Check the 'Actions' tab in the GitHub repo to make sure the actions started automatically
-
 ![Actions](/screenshots/actions.png)
 
-69. Verify a new deployment of the frontend and backend on the ECS cluster
-
+### Step 8.8: Verify ECS deployments
+Confirm new tasks are running for both frontend and backend services.
 ![Frontend Verification](/screenshots/fe_verify.png)
-
-70. Verify a new deployment of the frontend and backend on the ECS cluster
-
 ![Backend Verification](/screenshots/be_verify.png)
 
-# Optional Extras
-The core requirement for this challenge is to get the provided application up and running for consumption over the public internet. That being said, there are some opportunities in this code challenge to demonstrate your skill sets that are above and beyond the core requirement.
-
-A few examples of extras for this coding challenge:
-1. Dockerizing the application
-2. Scripts to set up the infrastructure
-3. Providing a pipeline for the application deployment
-4. Running the application in a serverless environment
-
-This is not an exhaustive list of extra features that could be added to this code challenge. At the end of the day, this section is for you to demonstrate any skills you want to show that’s not captured in the core requirement.
+### Step 8.9: Verify the application in the browser
+Navigate to the ALB DNS and confirm the SUCCESS message is displayed.
+![Success Verification](/screenshots/double_check.png)
